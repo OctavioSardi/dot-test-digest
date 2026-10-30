@@ -19,6 +19,7 @@ import type { ExecutionGear, FailureCluster } from "./types/schema.js";
 import { VERSION } from "./version.js";
 
 const COMMAND_NOT_FOUND = 127;
+const EX_SOFTWARE = 70;
 
 interface Attempt {
   lines: CapturedLine[];
@@ -169,7 +170,8 @@ export async function main(argv: readonly string[], deps: MainDeps = {}): Promis
     rawLog.close();
     const message = error instanceof Error ? error.message : String(error);
     process.stderr.write(`dot-test-digest: ${message}\n`);
-    return COMMAND_NOT_FOUND;
+    const spawnCode = (error as NodeJS.ErrnoException).code;
+    return spawnCode === "ENOENT" || spawnCode === "EACCES" ? COMMAND_NOT_FOUND : EX_SOFTWARE;
   }
 }
 
