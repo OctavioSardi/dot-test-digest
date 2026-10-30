@@ -66,7 +66,7 @@ Commit after every task. Conventional commits, one line, no body.
 **Files:**
 - Create: `package.json`, `tsconfig.json`, `vitest.config.ts`, `.gitignore`, `.env.example`, `src/version.ts`, `tests/smoke.spec.ts`
 
-- [ ] **Step 1: Create the repository if it is not one yet**
+- [x] **Step 1: Create the repository if it is not one yet**
 
 ```bash
 cd /mnt/octavio/octavio/Projects/Flowdots/dot-test-digest
@@ -75,7 +75,7 @@ git add specs
 git commit -m "docs: add SPEC-002 and its integrity review"
 ```
 
-- [ ] **Step 2: Write `package.json`**
+- [x] **Step 2: Write `package.json`**
 
 ```json
 {
@@ -105,7 +105,7 @@ git commit -m "docs: add SPEC-002 and its integrity review"
 }
 ```
 
-- [ ] **Step 3: Write `tsconfig.json`, `vitest.config.ts`, `.gitignore`, `.env.example`, `src/version.ts`**
+- [x] **Step 3: Write `tsconfig.json`, `vitest.config.ts`, `.gitignore`, `.env.example`, `src/version.ts`**
 
 `tsconfig.json`:
 
@@ -176,7 +176,7 @@ DOT_TEST_DIGEST_HOME=
 export const VERSION = "0.1.0";
 ```
 
-- [ ] **Step 4: Write the smoke test**
+- [x] **Step 4: Write the smoke test**
 
 `tests/smoke.spec.ts`:
 
@@ -191,7 +191,7 @@ describe("toolchain", () => {
 });
 ```
 
-- [ ] **Step 5: Install and verify**
+- [x] **Step 5: Install and verify**
 
 Run:
 
@@ -203,7 +203,7 @@ pnpm test
 
 Expected: `pnpm install` writes `pnpm-lock.yaml`; `pnpm typecheck` exits 0 with no output; `pnpm test` reports `1 passed`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A
@@ -219,7 +219,7 @@ Implements SPEC §4.1 schema plus the Jev 1.13 payload shapes (R1). This file is
 **Files:**
 - Create: `src/types/schema.ts`, `tests/schema.spec.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/schema.spec.ts`:
 
@@ -325,12 +325,12 @@ describe("JevResponseSchema", () => {
 });
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 Run: `pnpm vitest run tests/schema.spec.ts`
 Expected: FAIL — `Failed to resolve import "../src/types/schema.js"`.
 
-- [ ] **Step 3: Write `src/types/schema.ts`**
+- [x] **Step 3: Write `src/types/schema.ts`**
 
 ```ts
 import { z } from "zod";
@@ -478,12 +478,12 @@ export const JevRequestSchema = z.object({
 export type JevRequest = z.infer<typeof JevRequestSchema>;
 ```
 
-- [ ] **Step 4: Run it and watch it pass**
+- [x] **Step 4: Run it and watch it pass**
 
 Run: `pnpm vitest run tests/schema.spec.ts && pnpm typecheck`
 Expected: `8 passed`, typecheck exits 0.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A
@@ -499,7 +499,7 @@ Implements SPEC §4.1's flag table plus R3 (`--retry-flakes`). Everything after 
 **Files:**
 - Create: `src/cli/args.ts`, `tests/cli.spec.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/cli.spec.ts`:
 
@@ -581,12 +581,12 @@ describe("parseArgs", () => {
 });
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 Run: `pnpm vitest run tests/cli.spec.ts`
 Expected: FAIL — `Failed to resolve import "../src/cli/args.js"`.
 
-- [ ] **Step 3: Write `src/cli/args.ts`**
+- [x] **Step 3: Write `src/cli/args.ts`**
 
 ```ts
 import {
@@ -730,12 +730,12 @@ function validate(raw: Record<string, unknown>): CliOptions {
 }
 ```
 
-- [ ] **Step 4: Run it and watch it pass**
+- [x] **Step 4: Run it and watch it pass**
 
 Run: `pnpm vitest run tests/cli.spec.ts`
 Expected: `8 passed`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A
@@ -751,7 +751,7 @@ Satisfies the first half of INV-1: nothing that only exists to decorate a termin
 **Files:**
 - Create: `src/pruner/ansi-stripper.ts`, `tests/pruner.spec.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/pruner.spec.ts` (first block — later tasks append to this file):
 
@@ -826,12 +826,12 @@ describe("passing noise", () => {
 });
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 Run: `pnpm vitest run tests/pruner.spec.ts`
 Expected: FAIL — `Failed to resolve import "../src/pruner/ansi-stripper.js"`.
 
-- [ ] **Step 3: Write `src/pruner/ansi-stripper.ts`**
+- [x] **Step 3: Write `src/pruner/ansi-stripper.ts`**
 
 ```ts
 const CSI = /\u001b\[[0-?]*[ -/]*[@-~]/g;
@@ -878,12 +878,12 @@ export function stripPassingNoise(lines: readonly string[]): string[] {
 }
 ```
 
-- [ ] **Step 4: Run it and watch it pass**
+- [x] **Step 4: Run it and watch it pass**
 
 Run: `pnpm vitest run tests/pruner.spec.ts`
 Expected: `14 passed` (3 + 3 + 1 + 7).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A
@@ -900,7 +900,7 @@ Satisfies INV-4 and the `SignalWindow` half of §4.2: at most 5 repository frame
 - Create: `src/pruner/stack-pruner.ts`
 - Modify: `tests/pruner.spec.ts` (append a block)
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `tests/pruner.spec.ts`:
 
@@ -1031,12 +1031,12 @@ describe("readSignalWindow", () => {
 });
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 Run: `pnpm vitest run tests/pruner.spec.ts`
 Expected: FAIL — `Failed to resolve import "../src/pruner/stack-pruner.js"`.
 
-- [ ] **Step 3: Write `src/pruner/stack-pruner.ts`**
+- [x] **Step 3: Write `src/pruner/stack-pruner.ts`**
 
 ```ts
 import fs from "node:fs";
@@ -1175,12 +1175,12 @@ export function readSignalWindow(
 }
 ```
 
-- [ ] **Step 4: Run it and watch it pass**
+- [x] **Step 4: Run it and watch it pass**
 
 Run: `pnpm vitest run tests/pruner.spec.ts && pnpm typecheck`
 Expected: all pruner tests pass; typecheck exits 0.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A
@@ -1196,7 +1196,7 @@ Satisfies INV-2 (collapse cascading failures, cap clusters) and the fingerprint 
 **Files:**
 - Create: `src/pruner/cluster-dedup.ts`, `tests/dedup-and-tdd.spec.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/dedup-and-tdd.spec.ts` (first block):
 
@@ -1336,12 +1336,12 @@ describe("dedupeFailures", () => {
 });
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 Run: `pnpm vitest run tests/dedup-and-tdd.spec.ts`
 Expected: FAIL — `Failed to resolve import "../src/pruner/cluster-dedup.js"`.
 
-- [ ] **Step 3: Write `src/pruner/cluster-dedup.ts`**
+- [x] **Step 3: Write `src/pruner/cluster-dedup.ts`**
 
 ```ts
 import { createHash } from "node:crypto";
@@ -1447,12 +1447,12 @@ export function dedupeFailures(
 
 **Note on the first test's `signal_window` assertion:** it passes only because `/work/repo/src/auth/jwt.ts` does not exist, so the inliner returns `""`. That is intentional — Task 9 covers the real excerpt.
 
-- [ ] **Step 4: Run it and watch it pass**
+- [x] **Step 4: Run it and watch it pass**
 
 Run: `pnpm vitest run tests/dedup-and-tdd.spec.ts`
 Expected: `8 passed`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A
@@ -1468,7 +1468,7 @@ Satisfies Gear 2 (SPEC §2.3) and INV-3: every byte is persisted, every emitted 
 **Files:**
 - Create: `src/runner/raw-log.ts`, `src/runner/capture.ts`, `tests/runner.spec.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/runner.spec.ts`:
 
@@ -1554,12 +1554,12 @@ describe("runChild", () => {
 });
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 Run: `pnpm vitest run tests/runner.spec.ts`
 Expected: FAIL — `Failed to resolve import "../src/runner/raw-log.js"`.
 
-- [ ] **Step 3: Write `src/runner/raw-log.ts`**
+- [x] **Step 3: Write `src/runner/raw-log.ts`**
 
 ```ts
 import fs from "node:fs";
@@ -1628,7 +1628,7 @@ export class RawLogWriter {
 }
 ```
 
-- [ ] **Step 4: Write `src/runner/capture.ts`**
+- [x] **Step 4: Write `src/runner/capture.ts`**
 
 ```ts
 import { spawn } from "node:child_process";
@@ -1721,12 +1721,12 @@ export function runChild(
 }
 ```
 
-- [ ] **Step 5: Run it and watch it pass**
+- [x] **Step 5: Run it and watch it pass**
 
 Run: `pnpm vitest run tests/runner.spec.ts && pnpm typecheck`
 Expected: `7 passed`; typecheck exits 0.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A
@@ -1744,7 +1744,7 @@ Implements REQ-GEAR0-ENGINE (§4.2): four deterministic grammars, one registry, 
 
 `src/adapters/common.ts` exists so the registry and the four grammars can share helpers without a circular import. Every adapter returns the same `AdapterResult`, and only `index.ts` picks the winner (`MIN_ADAPTER_SCORE = 3`, so a stray `FAIL\tpkg\t0.2s` line from Go output can never win over the Go grammar).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/adapters.spec.ts`:
 
@@ -1929,12 +1929,12 @@ describe("classifyMessage", () => {
 });
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 Run: `pnpm vitest run tests/adapters.spec.ts`
 Expected: FAIL — `Failed to resolve import "../src/adapters/index.js"`.
 
-- [ ] **Step 3: Write `src/adapters/common.ts`**
+- [x] **Step 3: Write `src/adapters/common.ts`**
 
 ```ts
 import type { RawFailure } from "../pruner/cluster-dedup.js";
@@ -2025,7 +2025,7 @@ export function mergeCounts(into: AdapterCounts, from: AdapterCounts): AdapterCo
 }
 ```
 
-- [ ] **Step 4: Write `src/adapters/index.ts`**
+- [x] **Step 4: Write `src/adapters/index.ts`**
 
 ```ts
 import type { CapturedLine } from "../runner/capture.js";
@@ -2072,7 +2072,7 @@ export function runGear0(lines: readonly CapturedLine[]): AdapterResult | null {
 }
 ```
 
-- [ ] **Step 5: Write `src/adapters/js-test.ts`**
+- [x] **Step 5: Write `src/adapters/js-test.ts`**
 
 ```ts
 import type { CapturedLine } from "../runner/capture.js";
@@ -2193,7 +2193,7 @@ export const jsTestAdapter: Adapter = {
 };
 ```
 
-- [ ] **Step 6: Write `src/adapters/tsc-eslint.ts`**
+- [x] **Step 6: Write `src/adapters/tsc-eslint.ts`**
 
 ```ts
 import type { CapturedLine } from "../runner/capture.js";
@@ -2268,7 +2268,7 @@ export const tscEslintAdapter: Adapter = {
 };
 ```
 
-- [ ] **Step 7: Write `src/adapters/python.ts`**
+- [x] **Step 7: Write `src/adapters/python.ts`**
 
 ```ts
 import type { CapturedLine } from "../runner/capture.js";
@@ -2378,7 +2378,7 @@ export const pythonAdapter: Adapter = {
 };
 ```
 
-- [ ] **Step 8: Write `src/adapters/rust-go.ts`**
+- [x] **Step 8: Write `src/adapters/rust-go.ts`**
 
 ```ts
 import type { CapturedLine } from "../runner/capture.js";
@@ -2508,12 +2508,12 @@ export const rustGoAdapter: Adapter = {
 };
 ```
 
-- [ ] **Step 9: Run it and watch it pass**
+- [x] **Step 9: Run it and watch it pass**
 
 Run: `pnpm vitest run tests/adapters.spec.ts && pnpm typecheck`
 Expected: `13 passed`; typecheck exits 0.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add -A
@@ -2531,7 +2531,7 @@ Satisfies INV-1 (≤160 bytes on pass), INV-2 (≤600 tokens on failure) and CT-
 
 **Decision (R13, note it in the commit):** INV-1's 160-byte ceiling applies to the default `compact-md` format. `--format=json` is a machine-format opt-in and emits the full envelope; CT-1 runs with the default format. Without this split the spec contradicts itself, because a conforming JSON envelope cannot fit in 160 bytes.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/envelope.spec.ts`:
 
@@ -2743,12 +2743,12 @@ describe("json format", () => {
 });
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 Run: `pnpm vitest run tests/envelope.spec.ts`
 Expected: FAIL — `Failed to resolve import "../src/formatters/envelope.js"`.
 
-- [ ] **Step 3: Write `src/formatters/envelope.ts`**
+- [x] **Step 3: Write `src/formatters/envelope.ts`**
 
 ```ts
 import os from "node:os";
@@ -2882,12 +2882,12 @@ export function formatEnvelope(envelope: DigestEnvelope, format: OutputFormat): 
 }
 ```
 
-- [ ] **Step 4: Run it and watch it pass**
+- [x] **Step 4: Run it and watch it pass**
 
 Run: `pnpm vitest run tests/envelope.spec.ts && pnpm typecheck`
 Expected: `11 passed`; typecheck exits 0.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A
@@ -2904,7 +2904,7 @@ Satisfies REQ-TDD-GATE (§4.3), INV-5, `RedGreenDelta`, and CT-5 (scope isolatio
 - Create: `src/state/tdd-gate.ts`
 - Modify: `tests/dedup-and-tdd.spec.ts` (append a block)
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `tests/dedup-and-tdd.spec.ts`:
 
@@ -3124,12 +3124,12 @@ describe("scope isolation (CT-5)", () => {
 });
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 Run: `pnpm vitest run tests/dedup-and-tdd.spec.ts`
 Expected: FAIL — `Failed to resolve import "../src/state/tdd-gate.js"`.
 
-- [ ] **Step 3: Write `src/state/tdd-gate.ts`**
+- [x] **Step 3: Write `src/state/tdd-gate.ts`**
 
 ```ts
 import { createHash, randomBytes } from "node:crypto";
@@ -3298,12 +3298,12 @@ export function evaluatePhase(args: PhaseArgs): PhaseDecision {
 }
 ```
 
-- [ ] **Step 4: Run it and watch it pass**
+- [x] **Step 4: Run it and watch it pass**
 
 Run: `pnpm vitest run tests/dedup-and-tdd.spec.ts && pnpm typecheck`
 Expected: `21 passed`; typecheck exits 0.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A
@@ -3319,7 +3319,7 @@ Implements REQ-GEAR1-JEV (§4.4) and INV-6: at most 255 candidate windows, one `
 **Files:**
 - Create: `src/gears/windows.ts`, `src/gears/jev-client.ts`, `src/gears/gear1-jev.ts`, `tests/gear1-jev.spec.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/gear1-jev.spec.ts`:
 
@@ -3540,12 +3540,12 @@ describe("triageUnstructured", () => {
 });
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 Run: `pnpm vitest run tests/gear1-jev.spec.ts`
 Expected: FAIL — `Failed to resolve import "../src/gears/jev-client.js"`.
 
-- [ ] **Step 3: Write `src/gears/windows.ts`**
+- [x] **Step 3: Write `src/gears/windows.ts`**
 
 ```ts
 import type { CapturedLine } from "../runner/capture.js";
@@ -3629,7 +3629,7 @@ export function selectCandidateWindows(windows: readonly LogWindow[]): LogWindow
 }
 ```
 
-- [ ] **Step 4: Write `src/gears/jev-client.ts`**
+- [x] **Step 4: Write `src/gears/jev-client.ts`**
 
 ```ts
 import {
@@ -3702,7 +3702,7 @@ export class JevClient {
 }
 ```
 
-- [ ] **Step 5: Write `src/gears/gear1-jev.ts`**
+- [x] **Step 5: Write `src/gears/gear1-jev.ts`**
 
 ```ts
 import { computeFingerprint } from "../pruner/cluster-dedup.js";
@@ -3901,12 +3901,12 @@ export async function triageUnstructured(input: Gear1Input): Promise<Gear1Outcom
 }
 ```
 
-- [ ] **Step 6: Run it and watch it pass**
+- [x] **Step 6: Run it and watch it pass**
 
 Run: `pnpm vitest run tests/gear1-jev.spec.ts && pnpm typecheck`
 Expected: `11 passed`; typecheck exits 0.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add -A
@@ -3923,7 +3923,7 @@ Satisfies INV-3 (exact exit-code and signal transparency), INV-5's `EX_USAGE` pa
 - Create: `src/index.ts`, `tests/fixtures/generate.ts`
 - Modify: `tests/cli.spec.ts` (append a block)
 
-- [ ] **Step 1: Write the fixture generators**
+- [x] **Step 1: Write the fixture generators**
 
 `tests/fixtures/generate.ts`:
 
@@ -3967,7 +3967,7 @@ export function linkerLog(totalLines = 3200, errorAt = 2840): string {
 }
 ```
 
-- [ ] **Step 2: Write the failing e2e tests**
+- [x] **Step 2: Write the failing e2e tests**
 
 Append to `tests/cli.spec.ts`:
 
@@ -4114,12 +4114,12 @@ describeE2e("red phase through the CLI (INV-5)", () => {
 });
 ```
 
-- [ ] **Step 3: Run it and watch it fail**
+- [x] **Step 3: Run it and watch it fail**
 
 Run: `pnpm vitest run tests/cli.spec.ts`
 Expected: FAIL — `Failed to resolve import "../src/index.js"`.
 
-- [ ] **Step 4: Write `src/index.ts`**
+- [x] **Step 4: Write `src/index.ts`**
 
 ```ts
 #!/usr/bin/env node
@@ -4305,12 +4305,12 @@ if (entry !== undefined && import.meta.url === pathToFileURL(entry).href) {
 }
 ```
 
-- [ ] **Step 5: Run it and watch it pass**
+- [x] **Step 5: Run it and watch it pass**
 
 Run: `pnpm vitest run tests/cli.spec.ts && pnpm typecheck`
 Expected: `18 passed` (8 parse tests + 10 e2e). The `top_frame` column comes from the frame in the child stream (`28:19`); the SignalWindow excerpt comes from the fixture file, whose line 28 is `  return parts.split('.');`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A
@@ -4326,7 +4326,7 @@ Closes SPEC §6. CT-1 and CT-2 are already covered in-process by Task 12; this t
 **Files:**
 - Create: `tests/fixtures/project/vitest.config.ts`, `tests/fixtures/project/src/cart.ts`, `tests/fixtures/project/passing.spec.ts`, `tests/fixtures/project/failing.spec.ts`, `tests/fixtures/project/broken-import.spec.ts`, `tests/compliance.spec.ts`, `README.md`
 
-- [ ] **Step 1: Create the fixture project**
+- [x] **Step 1: Create the fixture project**
 
 `tests/fixtures/project/vitest.config.ts`:
 
@@ -4406,7 +4406,7 @@ describe("discount", () => {
 });
 ```
 
-- [ ] **Step 2: Write the compliance suite**
+- [x] **Step 2: Write the compliance suite**
 
 `tests/compliance.spec.ts`:
 
@@ -4631,12 +4631,12 @@ describe("CT-5: concurrent scope isolation", () => {
 });
 ```
 
-- [ ] **Step 3: Run the suite**
+- [x] **Step 3: Run the suite**
 
 Run: `pnpm vitest run tests/compliance.spec.ts`
 Expected: `6 passed`. The three CT-3 cases each spawn `vitest` and take a few seconds; the per-test timeout allows for that.
 
-- [ ] **Step 4: Write `README.md`**
+- [x] **Step 4: Write `README.md`**
 
 ```markdown
 # dot-test-digest
@@ -4667,7 +4667,7 @@ pnpm build      # emits dist/ with the dot-test-digest bin
 ```
 ```
 
-- [ ] **Step 5: Verify the whole repository**
+- [x] **Step 5: Verify the whole repository**
 
 Run:
 
@@ -4680,7 +4680,7 @@ node dist/index.js -- node -e "console.log('ok')"
 
 Expected: typecheck clean; all unit tests pass; `0.1.0`; the last command prints a one-line `[PASS]` digest and exits 0.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A
@@ -4714,3 +4714,43 @@ Plan complete and saved to `docs/superpowers/plans/2026-10-30-dot-test-digest.md
 **1. Subagent-Driven (recommended)** — fresh subagent per task, review between tasks, fast iteration.
 
 **2. Inline Execution** — execute tasks in this session with `superpowers:executing-plans`, batch execution with checkpoints for review.
+
+---
+
+## Execution record (2026-10-30)
+
+All 13 tasks were executed in order, one commit each. The checkboxes above are ticked to mean **executed and verified by that task's own tests**, not "independently reviewed".
+
+Final state at HEAD: `pnpm verify` → typecheck clean, **141 tests across 10 files**; `pnpm build` → working `dist/index.js`.
+
+### Where the plan's predicted counts were wrong
+
+The predicted test counts were estimates written before the tests were final. The authoritative number is `pnpm verify`.
+
+| Task | Step said | Actual |
+|---|---|---|
+| 2 | `8 passed` | 7 (a malformed duplicate was removed during plan self-review; the count was not updated) |
+| 4 | `14 passed` | 15 |
+| 8 | `13 passed` | 16 |
+| 10 | `21 passed` | 24 |
+| 12 | `18 passed` | 16 |
+
+### Defects the plan's own tests caught during execution
+
+Each was fixed before the task's commit, in the order found:
+
+1. `parseArgs(["vitest", "run"])` reported "unknown flag" instead of the missing `--` delimiter.
+2. `at node:internal/modules/cjs/loader:1234:14` was not recognised as an external frame (no file extension to parse).
+3. `readSignalWindow` invented a phantom last line for a newline-terminated file.
+4. Engine frames (`<anonymous>`, `(index 0)`) spent the INV-4 boundary slot and the repository-frame budget.
+5. Vite's `Failed to load url … Does the file exist?` was not classified as `SYNTAX_IMPORT_ERROR`.
+6. The envelope test hardcoded `/home/dev`, so home-relative path shortening was untestable on any other host.
+7. The CT-5 test asserted exit 0 for a red run with no parsed failure — a direct contradiction of INV-5.
+
+### Post-implementation review (see `specs/INTEGRITY-SPEC-002.md` §7)
+
+An independent review of the built binary found five further invariant gaps; all were fixed and are recorded there as R13 (extended), R14 and R15, together with the limitations that were accepted rather than fixed.
+
+### Toolchain as installed
+
+Node 22.22.0, pnpm 10.9.0, TypeScript 5.9.3, vitest 2.1.9, @types/node 22.20.5, zod 3.x.
