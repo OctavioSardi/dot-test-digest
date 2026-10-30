@@ -24,7 +24,8 @@ export interface Adapter {
 const SYNTAX_TOKENS: readonly RegExp[] = [
   /SyntaxError/,
   /Cannot find module/,
-  /Failed to resolve import/,
+  /Failed to resolve/,
+  /Failed to load url/,
   /ERR_MODULE_NOT_FOUND/,
   /ModuleNotFoundError/,
   /ImportError/,
