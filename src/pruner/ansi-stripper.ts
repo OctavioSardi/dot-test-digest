@@ -23,8 +23,11 @@ export function stripAnsi(input: string): string {
  */
 export function normalizeLine(input: string): string {
   const stripped = stripAnsi(input);
-  const carriageReturn = stripped.lastIndexOf("\r");
-  const visible = carriageReturn === -1 ? stripped : stripped.slice(carriageReturn + 1);
+  // A CR either ends a CRLF pair or rewrites the line in place (progress bar).
+  // Keep the last segment that still has visible text, so `text\r` survives and
+  // `1%\r50%\r100%` collapses to its final frame.
+  const segments = stripped.split("\r");
+  const visible = segments.filter((segment) => segment.trim().length > 0).pop() ?? "";
   return visible.replace(/[ \t]+$/, "");
 }
 

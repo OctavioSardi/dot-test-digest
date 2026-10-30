@@ -172,7 +172,29 @@ describe("classifyMessage", () => {
     ["Timeout of 5000ms exceeded", "TIMEOUT_OR_CONN_REFUSED"],
     ["ECONNREFUSED 127.0.0.1:5432", "TIMEOUT_OR_CONN_REFUSED"],
     ["TypeError: token.split is not a function", "RUNTIME_EXCEPTION"],
+    ["SyntaxError: The requested module './cart.mjs' does not provide an export named 'missingThing'", "RUNTIME_EXCEPTION"],
   ] as const)("classifies %s", (message, kind) => {
     expect(classifyMessage(message)).toBe(kind);
+  });
+});
+
+describe("tap grammar", () => {
+  it("parses a TAP block from node:test", () => {
+    const stream = [
+      "not ok 1 - cart totals",
+      "  ---",
+      "  error: |-",
+      "    AssertionError: expected 99 to be 100",
+      "  ...",
+      "1..1",
+      "# tests 1",
+      "# pass 0",
+      "# fail 1",
+    ].join("\n");
+    const result = runGear0(lines(stream));
+    expect(result?.adapter).toBe("js-test");
+    expect(result?.counts.failed).toBe(1);
+    expect(result?.failures).toHaveLength(1);
+    expect(result?.failures[0]?.errorKind).toBe("ASSERTION_FAILURE");
   });
 });

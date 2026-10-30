@@ -1,4 +1,5 @@
 import { computeFingerprint } from "../pruner/cluster-dedup.js";
+import { toRepoRelative } from "../pruner/stack-pruner.js";
 import type { CapturedLine } from "../runner/capture.js";
 import type {
   ExecutionGear,
@@ -17,6 +18,9 @@ import {
 export const FLAKE_PROBABILITY_THRESHOLD = 0.8;
 export const MIN_UNSTRUCTURED_LINES = 151;
 export const TAIL_STATE_LINES = 40;
+/** Keeps one Jev request inside the model's 64k context (R11). */
+export const MAX_CRITERIA_BYTES = 120_000;
+const MAX_WINDOW_CHARS = 1_500;
 const MESSAGE_CEILING = 240;
 
 export const ERROR_CATEGORIES = {
@@ -66,7 +70,11 @@ function firstSalientLine(window: LogWindow): string {
   return chosen.length > MESSAGE_CEILING ? `${chosen.slice(0, MESSAGE_CEILING)}...` : chosen;
 }
 
-function buildCluster(window: LogWindow, lines: readonly CapturedLine[]): FailureCluster {
+function buildCluster(
+  window: LogWindow,
+  lines: readonly CapturedLine[],
+  repoRoot: string,
+): FailureCluster {
   const startLine = Math.max(1, window.startLine - EXCERPT_PADDING);
   const lastLine = lines[lines.length - 1]?.line ?? window.endLine;
   const endLine = Math.min(lastLine, window.endLine + EXCERPT_PADDING);
@@ -76,7 +84,10 @@ function buildCluster(window: LogWindow, lines: readonly CapturedLine[]): Failur
     .join("\n");
 
   const frame = FILE_FRAME.exec(window.text);
-  const topFrame = frame?.[2] !== undefined ? `${frame[1]}:${frame[2]}:${frame[3] ?? "1"}` : "unknown:0:0";
+  const topFrame =
+    frame?.[2] !== undefined && frame[1] !== undefined
+      ? `${toRepoRelative(frame[1], repoRoot)}:${frame[2]}:${frame[3] ?? "1"}`
+      : "unknown:0:0";
   const message = firstSalientLine(window);
   const fingerprint = computeFingerprint("UNSTRUCTURED_BUILD_ERROR", topFrame, message);
 
@@ -116,7 +127,7 @@ export async function triageUnstructured(input: Gear1Input): Promise<Gear1Outcom
     const window = heuristicWindow(windows.length > 0 ? windows : candidates);
     return {
       gear: "GEAR_0_HEURISTIC_FALLBACK",
-      cluster: buildCluster(window, input.lines),
+      cluster: buildCluster(window, input.lines, input.repoRoot),
       retry: false,
       errorCategory: null,
     };
@@ -124,8 +135,16 @@ export async function triageUnstructured(input: Gear1Input): Promise<Gear1Outcom
 
   if (input.noJev || !client.isConfigured() || candidates.length === 0) return fallback();
 
+  // R11: the request itself must be bounded, not only the option count (INV-6).
   const criteria: Record<string, string> = {};
-  for (const window of candidates) criteria[window.id] = window.text;
+  let budget = MAX_CRITERIA_BYTES;
+  for (const window of candidates) {
+    if (budget <= 0) break;
+    const text = window.text.length > MAX_WINDOW_CHARS ? window.text.slice(0, MAX_WINDOW_CHARS) : window.text;
+    criteria[window.id] = text;
+    budget -= Buffer.byteLength(text, "utf8");
+  }
+  if (Object.keys(criteria).length === 0) return fallback();
 
   const questions: Record<string, JevQuestion> = {
     root_cause_window: {
@@ -187,7 +206,7 @@ export async function triageUnstructured(input: Gear1Input): Promise<Gear1Outcom
 
   return {
     gear: "GEAR_1_JEV",
-    cluster: buildCluster(window, input.lines),
+    cluster: buildCluster(window, input.lines, input.repoRoot),
     retry,
     errorCategory,
   };

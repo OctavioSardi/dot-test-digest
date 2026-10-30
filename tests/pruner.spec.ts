@@ -35,6 +35,11 @@ describe("normalizeLine", () => {
   it("leaves an empty line empty", () => {
     expect(normalizeLine("")).toBe("");
   });
+
+  it("keeps the text of a CRLF-terminated line", () => {
+    expect(normalizeLine("Tests  1 failed (1)\r")).toBe("Tests  1 failed (1)");
+    expect(normalizeLine("progress 10%\rprogress 100%\r")).toBe("progress 100%");
+  });
 });
 
 describe("normalizeLines", () => {
@@ -118,6 +123,19 @@ describe("pruneStack", () => {
       "at run (src/app/router.ts:9:3)",
       "at main (src/index.ts:4:1)",
       "at start (src/boot.ts:2:1)",
+      "at node_modules/vitest/dist/chunk.js:1:1",
+    ]);
+  });
+
+  it("never spends the boundary slot on an engine frame", () => {
+    const frames = [
+      "at parseToken (src/auth/jwt.ts:28:19)",
+      "new Promise (<anonymous>)",
+      "async Promise.all (index 0)",
+      "at node_modules/vitest/dist/chunk.js:1:1",
+    ];
+    expect(pruneStack(frames, REPO)).toEqual([
+      "at parseToken (src/auth/jwt.ts:28:19)",
       "at node_modules/vitest/dist/chunk.js:1:1",
     ]);
   });

@@ -65,7 +65,17 @@ export async function main(argv: readonly string[], deps: MainDeps = {}): Promis
   const repoRoot = process.cwd();
   const scopeId = resolveScopeId(repoRoot, options.scopeId);
   const previousState = options.tddPhase === "none" ? null : loadState(scopeId);
-  const rawLog = new RawLogWriter();
+
+  // Creating the log can fail (read-only cache). Fail loudly, but before the child
+  // runs, so the child's exit code is never at stake.
+  let rawLog: RawLogWriter;
+  try {
+    rawLog = new RawLogWriter();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    process.stderr.write(`dot-test-digest: cannot create the raw log: ${message}\n`);
+    return EX_SOFTWARE;
+  }
 
   const attempt = async (): Promise<Attempt> => {
     const capture = await runChild(command, { rawLog, cwd: repoRoot });
@@ -131,6 +141,10 @@ export async function main(argv: readonly string[], deps: MainDeps = {}): Promis
       previousState,
       failedTests,
       passed: run.counts.passed,
+      // A runner we cannot parse may still leave behavioral evidence in the log.
+      evidence: run.clusters
+        .map((cluster) => `${cluster.message}\n${cluster.signal_window}`)
+        .join("\n"),
     });
 
     if (options.tddPhase !== "none") {
@@ -146,7 +160,13 @@ export async function main(argv: readonly string[], deps: MainDeps = {}): Promis
           at: new Date().toISOString(),
         },
       };
-      saveState(nextState);
+      // INV-3: losing the cache must not change the verdict or the exit code.
+      try {
+        saveState(nextState);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        process.stderr.write(`dot-test-digest: could not persist TDD state: ${message}\n`);
+      }
     }
 
     const envelope = buildEnvelope({

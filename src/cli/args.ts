@@ -54,6 +54,15 @@ function readFlagValue(argv: readonly string[], index: number, flag: string): [s
   return [value, index + 1];
 }
 
+function readBoolean(flag: string, token: string): boolean {
+  const equals = token.indexOf("=");
+  if (equals === -1) return true;
+  const value = token.slice(equals + 1);
+  if (value === "true") return true;
+  if (value === "false") return false;
+  throw new UsageError(`${flag} accepts only true or false, got ${value}`);
+}
+
 function readInt(flag: string, raw: string, min: number, max: number): number {
   const value = Number(raw);
   if (!Number.isInteger(value)) throw new UsageError(`${flag} must be an integer, got ${raw}`);
@@ -124,10 +133,10 @@ export function parseArgs(argv: readonly string[]): ParseResult {
         break;
       }
       case "--no-jev":
-        raw["noJev"] = true;
+        raw["noJev"] = readBoolean(flag, token);
         break;
       case "--retry-flakes":
-        raw["retryFlakes"] = true;
+        raw["retryFlakes"] = readBoolean(flag, token);
         break;
       default:
         throw new UsageError(`unknown flag: ${flag}`);

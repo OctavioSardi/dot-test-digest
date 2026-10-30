@@ -80,7 +80,7 @@ export function renderPassLine(envelope: DigestEnvelope): string {
   const line =
     `[${statusLabel(envelope)}] ${envelope.summary.passed} passed, ${envelope.summary.failed} failed` +
     `${deltaFragment(envelope)} in ${envelope.duration_ms}ms | log: ${shortenPath(envelope.raw_log_path)}`;
-  return truncateBytes(line, PASS_BYTE_CEILING);
+  return truncateBytes(line, PASS_BYTE_CEILING - 1);
 }
 
 function renderCluster(cluster: FailureCluster): string {
@@ -119,7 +119,7 @@ export function renderFailBody(envelope: DigestEnvelope): string {
     kept -= 1;
     text = render();
   }
-  return truncateBytes(text, FAIL_BYTE_CEILING);
+  return truncateBytes(text, FAIL_BYTE_CEILING - 1);
 }
 
 export function formatEnvelope(envelope: DigestEnvelope, format: OutputFormat): string {

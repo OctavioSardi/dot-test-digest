@@ -52,8 +52,20 @@ const ASSERTION_TOKENS: readonly RegExp[] = [
   /^\s*assert\b/,
 ];
 
+/**
+ * R15: "does not provide an export named X" is INV-5's *missing exported symbol
+ * under test*, which is a valid red. Node reports it as a SyntaxError, so it has
+ * to be classified before the syntax tokens.
+ */
+const MISSING_EXPORT_TOKENS: readonly RegExp[] = [
+  /does not provide an export named/,
+  /has no exported member/,
+  /is not exported from/,
+];
+
 /** Single source of truth for `error_kind` on a free-text message. */
 export function classifyMessage(message: string): ErrorKind {
+  if (MISSING_EXPORT_TOKENS.some((token) => token.test(message))) return "RUNTIME_EXCEPTION";
   if (SYNTAX_TOKENS.some((token) => token.test(message))) return "SYNTAX_IMPORT_ERROR";
   if (TIMEOUT_TOKENS.some((token) => token.test(message))) return "TIMEOUT_OR_CONN_REFUSED";
   if (ASSERTION_TOKENS.some((token) => token.test(message))) return "ASSERTION_FAILURE";

@@ -23,6 +23,13 @@ export interface RunState {
   last_run: RunSnapshot | null;
 }
 
+/**
+ * R14: a runner this binary has no grammar for (json/junit reporters, TAP variants)
+ * still fails for a *behavioral* reason, which INV-5 says is a valid red.
+ */
+const BEHAVIORAL_EVIDENCE =
+  /AssertionError|expected .* to (?:be|equal|match|contain|throw)|does not provide an export named|missing export|is not a function|Cannot read propert/;
+
 export interface PhaseArgs {
   phase: TddPhase;
   childExitCode: number;
@@ -31,6 +38,8 @@ export interface PhaseArgs {
   previousState: RunState | null;
   failedTests: readonly string[];
   passed: number;
+  /** Raw failure text kept for runners we could not parse (optional). */
+  evidence?: string;
 }
 
 export interface PhaseDecision {
@@ -125,6 +134,9 @@ export function evaluatePhase(args: PhaseArgs): PhaseDecision {
         };
       }
       if (args.failures.length === 0) {
+        if (BEHAVIORAL_EVIDENCE.test(args.evidence ?? "")) {
+          return withDelta({ status: "VALID_RED", exitCode: 0, recordBaseline: true });
+        }
         return {
           status: "INVALID_RED",
           exitCode: EX_USAGE,

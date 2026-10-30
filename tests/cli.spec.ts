@@ -72,6 +72,13 @@ describe("parseArgs", () => {
   it("rejects an invalid enum value", () => {
     expect(() => parseArgs(["--tdd-phase", "blue", "--", "true"])).toThrow(/tdd-phase/);
   });
+
+  it("honours an explicit boolean value", () => {
+    expect(parseArgs(["--no-jev=false", "--retry-flakes=true", "--", "true"])).toMatchObject({
+      options: { noJev: false, retryFlakes: true },
+    });
+    expect(() => parseArgs(["--no-jev=maybe", "--", "true"])).toThrow(/no-jev/);
+  });
 });
 import fs from "node:fs";
 import os from "node:os";

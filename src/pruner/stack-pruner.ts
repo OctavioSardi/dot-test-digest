@@ -18,6 +18,13 @@ const EXTERNAL_PATH_PATTERNS: readonly RegExp[] = [
 /** Runtime markers that only make sense when read from the whole frame. */
 const EXTERNAL_FRAME_PATTERNS: readonly RegExp[] = [/(?:^|[\s(])node:/];
 
+/** Engine frames carry no file path at all, so they are never code you can open. */
+const INTERNAL_FRAME_PATTERNS: readonly RegExp[] = [
+  /<anonymous>/,
+  /\(index \d+\)/,
+  /<frozen /,
+];
+
 const FRAME_FILE = /((?:[A-Za-z]:)?[^\s()"']+\.(?:[cm]?[jt]sx?|py|rs|go)):(\d+)(?::(\d+))?/;
 const FRAME_SYMBOL = /\bat\s+([^\s(]+)\s*\(/;
 const PY_SYMBOL = /\bin\s+([A-Za-z_][\w.]*)\s*$/;
@@ -49,10 +56,19 @@ export function parseFrame(frame: string): FrameLocation {
   };
 }
 
+/** A frame the engine emitted and that names no file: never useful, never a boundary. */
+export function isEngineFrame(frame: string): boolean {
+  return (
+    parseFrame(frame).file === null &&
+    INTERNAL_FRAME_PATTERNS.some((pattern) => pattern.test(frame))
+  );
+}
+
 export function isExternalFrame(frame: string): boolean {
   if (EXTERNAL_FRAME_PATTERNS.some((pattern) => pattern.test(frame))) return true;
-  const target = parseFrame(frame).file ?? frame;
-  return EXTERNAL_PATH_PATTERNS.some((pattern) => pattern.test(target));
+  const parsed = parseFrame(frame);
+  if (parsed.file === null) return isEngineFrame(frame);
+  return EXTERNAL_PATH_PATTERNS.some((pattern) => pattern.test(parsed.file ?? frame));
 }
 
 export function toRepoRelative(file: string, repoRoot: string): string {
@@ -74,6 +90,7 @@ export function pruneStack(frames: readonly string[], repoRoot: string): string[
   let boundaryKept = false;
 
   for (const frame of frames) {
+    if (isEngineFrame(frame)) continue;
     if (isExternalFrame(frame)) {
       if (!boundaryKept && repoFrames > 0) {
         kept.push(frame.trim());

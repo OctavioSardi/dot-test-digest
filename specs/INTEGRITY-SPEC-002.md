@@ -86,3 +86,25 @@ These are binding for `docs/superpowers/plans/2026-10-30-dot-test-digest.md`. Ea
 | `package.json`, `tsconfig.json`, `src/**`, `tests/**` | Scheduled as plan Tasks 1–13 |
 
 Additive files that §5 does not name, required to satisfy invariants the table implies (`src/runner/*` for raw-log line mapping, `src/cli/args.ts`, `src/gears/windows.ts`, `src/gears/jev-client.ts`, `tests/cli.spec.ts`, `tests/adapters.spec.ts`, `tests/fixtures/**`, `.env.example`). Every path named in §5 still exists with exactly its stated responsibility.
+
+---
+
+## 7. Post-implementation review (2026-10-30)
+
+An independent review of the built binary against this spec found gaps that the R1–R13 plan did not cover. Resolutions adopted during implementation (also v0.1.1 amendment candidates):
+
+| ID | Resolution |
+|---|---|
+| **R14** | Red phase, no parsed failure block: if the log still carries behavioral evidence (`AssertionError`, `expected … to …`, `does not provide an export named`, `is not a function`, `Cannot read propert`), the run is `VALID_RED`; only a failure with no such evidence is `INVALID_RED`. Without this, any runner this binary has no grammar for (`--reporter=json`, junit, TAP variants) blocks a genuine red. |
+| **R15** | `does not provide an export named` / `has no exported member` / `is not exported from` classify as `RUNTIME_EXCEPTION`, **not** `SYNTAX_IMPORT_ERROR`. Node reports a missing symbol as a `SyntaxError`, but INV-5 explicitly names the missing exported symbol under test as a valid red. The token check must therefore run before the syntax tokens. |
+| **R13 (extended)** | Both ceilings — INV-1's 160 bytes and INV-2's 600 tokens — apply to `compact-md` only. `--format=json` is a machine format that emits the full envelope; no conforming JSON document can satisfy a 160-byte budget, and truncating JSON would defeat its purpose. |
+
+Defects fixed in the same pass: CRLF-terminated lines normalising to the empty string (disabling INV-2/INV-5 on Windows runners); ceilings measured without their trailing newline (161 bytes, not ≤160); `--no-jev=false` enabling the flag; a state-file write failure overriding the child's exit code (INV-3); engine frames (`<anonymous>`, `(index N)`) consuming the INV-4 boundary slot and repository budget; Gear 1 `top_frame` emitted absolute instead of repository-relative; the Gear 1 request body unbounded by bytes (R11) even though bounded by option count (INV-6); TAP and Playwright streams not detected by the `js-test` grammar.
+
+Accepted limitations, recorded rather than fixed:
+
+- The token estimate is `bytes / 4`; a payload of wide characters can exceed the *token intent* of INV-2 while staying under 2400 bytes.
+- Clusters dropped by `--max-clusters` are not reported as `+N more`; only token-budget drops are.
+- The raw log preserves every byte but not the live interleaving of stdout/stderr when a line is still incomplete; reported `L<n>` numbers are always self-consistent with the persisted file.
+- A failure whose log has no lines reports `L1-L1` because the schema requires a line range.
+- `--reporter=junit` output is treated as unstructured (Gear 1 or heuristic fallback), not as clusters.

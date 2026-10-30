@@ -201,6 +201,28 @@ describe("red phase (INV-5)", () => {
     expect(decision.exitCode).toBe(EX_USAGE);
   });
 
+  it("accepts an unparsed behavioral failure that left evidence in the log (R14)", () => {
+    const decision = evaluatePhase(
+      phaseArgs({
+        phase: "red",
+        childExitCode: 1,
+        failures: [],
+        evidence: '{"failureMessages":[["AssertionError: expected 99 to be 100"]]}',
+      }),
+    );
+    expect(decision.status).toBe("VALID_RED");
+    expect(decision.exitCode).toBe(0);
+    expect(decision.recordBaseline).toBe(true);
+  });
+
+  it("still blocks a silent failure with no evidence", () => {
+    const decision = evaluatePhase(
+      phaseArgs({ phase: "red", childExitCode: 1, failures: [], evidence: "" }),
+    );
+    expect(decision.status).toBe("INVALID_RED");
+    expect(decision.exitCode).toBe(EX_USAGE);
+  });
+
   it("accepts a behavioral assertion failure and records the baseline", () => {
     const decision = evaluatePhase(
       phaseArgs({

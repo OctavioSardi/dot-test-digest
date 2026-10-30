@@ -10,7 +10,9 @@ import {
   type AdapterResult,
 } from "./common.js";
 
-const HEADER = /^\s*(?:FAIL|✕|×|✗|●|not ok\s+\d+)\s+(.+?)\s*$/;
+const HEADER = /^\s*(?:FAIL|✕|×|✗|●|not ok\s+\d+|\d+\))\s+(.+?)\s*$/;
+const TAP_SUMMARY = /^#\s+(?:tests|pass|fail)\s+\d+\s*$/;
+const PLAYWRIGHT_HEADER = /^\s*\d+\)\s+\[[^\]]+\]\s+›/;
 const FRAME = /^\s*(?:❯|at)\s+(.+?)\s*$/;
 const ERROR_MESSAGE = /(?:^|\s)((?:[A-Za-z]*Error|AssertionError)[^\n]*)$/;
 const SUMMARY = /\b(?:Tests|Test Files|Tests:)\b/;
@@ -23,6 +25,8 @@ export const jsTestAdapter: Adapter = {
     for (const line of lines) {
       if (HEADER.test(line)) score += 1;
       if (SUMMARY.test(line) || /^\s*\d+\s+passing\s*\(/.test(line)) score += 3;
+      if (TAP_SUMMARY.test(line)) score += 3;
+      if (PLAYWRIGHT_HEADER.test(line)) score += 2;
     }
     return score;
   },
@@ -46,7 +50,11 @@ export const jsTestAdapter: Adapter = {
       const header = HEADER.exec(text);
       if (header) {
         flush();
-        const name = (header[1] ?? "").replace(/^\S+\.(?:spec|test)\.[cm]?[jt]sx?\s*>\s*/, "").trim();
+        const name = (header[1] ?? "")
+          .replace(/^\[[^\]]+\]\s+›\s+/, "")
+          .replace(/^-\s*/, "")
+          .replace(/^\S+\.(?:spec|test)\.[cm]?[jt]sx?\s*>\s*/, "")
+          .trim();
         current = {
           testName: name === "" ? null : name,
           errorKind: "RUNTIME_EXCEPTION",
@@ -61,6 +69,14 @@ export const jsTestAdapter: Adapter = {
       if (SUMMARY.test(text)) {
         const tokens = readCountTokens(text);
         if (tokens !== null) counts = mergeCounts(counts, tokens);
+        continue;
+      }
+
+      const tap = /^#\s+(tests|pass|fail)\s+(\d+)\s*$/.exec(text);
+      if (tap) {
+        const value = Number(tap[2]);
+        if (tap[1] === "pass") counts.passed = Math.max(counts.passed, value);
+        if (tap[1] === "fail") counts.failed = Math.max(counts.failed, value);
         continue;
       }
 
