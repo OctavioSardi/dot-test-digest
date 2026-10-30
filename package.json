@@ -1,0 +1,25 @@
+{
+  "name": "dot-test-digest",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Bounded test, compiler and build output compressor (SPEC-002-DOT-TEST-DIGEST).",
+  "license": "MIT",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "packageManager": "pnpm@10.9.0",
+  "bin": { "dot-test-digest": "dist/index.js" },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "verify": "pnpm typecheck && pnpm test"
+  },
+  "dependencies": { "zod": "^3.23.8" },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
