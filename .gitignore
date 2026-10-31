@@ -4,3 +4,6 @@ coverage/
 *.log
 .env
 .DS_Store
+
+# acceptance harness output
+.acceptance/
