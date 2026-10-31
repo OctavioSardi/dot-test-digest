@@ -4,7 +4,7 @@
 | :--- | :--- |
 | **Delta ID** | `DELTA-SPEC-002-ACCEPTANCE-2026-10-31` |
 | **Amends** | `specs/SPEC-002-DOT-TEST-DIGEST.md` v0.1.1 |
-| **Status** | `DRAFT` — proposal only; **not applied** to the base spec |
+| **Status** | `APPLIED` — deltas `Δ-1`–`Δ-5` are incorporated in `specs/SPEC-002-DOT-TEST-DIGEST.md` v0.1.2 (2026-10-31) |
 | **Date** | 2026-10-31 |
 | **Trigger** | First acceptance run of the built binary (`scripts/acceptance/run-acceptance.mjs`) |
 | **Evidence** | `.acceptance/run-2026-10-31_03-37-56-321/` (`summary.md`, `report.json`, `artifacts/`, `cache/`); gitignored, regenerate with `pnpm acceptance` |
@@ -18,7 +18,7 @@
 
 This document records what an end-to-end acceptance run changed our understanding of. It proposes
 five normative deltas to `SPEC-002` and a small set of implementation changes required to satisfy
-them. It does **not** edit `SPEC-002` v0.1.1; when accepted, the deltas below become v0.1.2.
+them. It did **not** edit `SPEC-002` v0.1.1; the deltas below are now applied as `SPEC-002` v0.1.2.
 
 The acceptance harness asserts only what the spec already promises. Its four failures are therefore
 either (a) implementation defects, (b) spec statements that cannot be satisfied as written, or
@@ -221,13 +221,14 @@ These are not themselves normative, but they are the minimal work needed to make
 
 | Area | Change |
 | :--- | :--- |
-| `src/adapters/js-test.ts` | Add compact-reporter states: file banner (metadata), inline `×` row (strip duration), `→` message, `Failed Tests` summary reconciliation, one shared stack attributed to the group, ignore `[n/m]` separators. Prefer the summary row (file + name) as the identity source. |
-| `src/adapters/common.ts` | Add a canonical test-name helper: strip ANSI, `^\s*×\s+`, trailing `\d+(\.\d+)?\s*(ms|s)`, and duplicate section markers; expose `canonicalTestId(file, name)`. |
-| `src/pruner/stack-pruner.ts` (or adapter frame gate) | Reject non-frame strings (file banners, messages, counters) before pruning; a frame must yield `file:line` or be an engine frame. |
-| `src/state/tdd-gate.ts` | Deduplicate baseline/last-run identities and compare canonical identities in `computeDelta`, so duplicate records cannot inflate `newly_passing` even if an adapter regresses. |
-| `tests/adapters.spec.ts` | Add the two-section compact-reporter fixture from §2.3; assert one failure per test, duration-free names, `→` message, shared stack attribution. |
-| `tests/dedup-and-tdd.spec.ts` | Add an end-to-end CT-2 case that spawns the built binary on a generated fixture (the acceptance checks C04–C06 can be reused as the oracle). |
-| `scripts/acceptance/run-acceptance.mjs` | No further change required; C04–C06 and C14 are the regression gate. (C15's scope-substitution bug is already fixed.) |
+| `src/adapters/js-test.ts` | Added compact-reporter states: file banner (metadata), inline `×` row (duration stripped), `→` message, `Failed Tests` summary reconciliation, one shared stack attributed to the group, `[n/m]` separators ignored. A `Failed Suites` block stays on the generic grammar. |
+| `src/pruner/failure-identity.ts` (new) | Canonical test-name normalisation (ANSI, decoration, `file > ` prefix, timing suffix), `canonicalTestId(file, name)` → `file::name`, and `uniqueFailures`. |
+| `src/pruner/cluster-dedup.ts` | Calls `uniqueFailures` before grouping, so `affected_count` counts distinct tests. |
+| `src/pruner/stack-pruner.ts` | Added `isFrameLike`; `pruneStack` rejects banners, messages, separators and counters. |
+| `src/index.ts` | Baseline and delta are built from canonical identities; failures are deduplicated before accounting. `computeDelta` itself is unchanged because it now receives canonical, unique identities. |
+| `tests/adapters.spec.ts` | Added the two-section compact fixture and an inline-stack TTY case; asserts one failure per test, duration-free names, `→` message, shared-stack attribution. |
+| `tests/dedup-and-tdd.spec.ts` | Added the canonical-identity dedupe case (inline `… 8ms` + summary row → one cluster, `affected_count: 1`). |
+| `scripts/acceptance/run-acceptance.mjs` | CT-2 fixture now throws in the repository helper (`src/helper.ts`) so the repository frame is inside V8's 10-frame window; the `node_modules` sink was removed. C04–C06 and C14 are the end-to-end oracle. |
 
 ---
 
@@ -243,6 +244,10 @@ A v0.1.2 implementation is done when, on the same machine:
 
 Checks C01, C02, C07–C13, C15–C17 must remain green; no invariant or ceiling is relaxed by this
 delta.
+
+**Result.** Satisfied on 2026-10-31 by run `run-2026-10-31_03-52-00-635`: **17 PASS / 0 FAIL /
+1 SKIP**, `pnpm verify` green, C04 `1 cluster` / `x50` / repository `top_frame` / 5-line window,
+C14 `delta: +1 newly passing, 0 regressions`. C18 remains skipped for want of `TYPESAFE_API_KEY`.
 
 ---
 
@@ -268,4 +273,5 @@ delta.
 
 | Version | Date | Change |
 | :--- | :--- | :--- |
+| `applied-1` | 2026-10-31 | Applied as `SPEC-002` v0.1.2. Implementation landed in `src/pruner/failure-identity.ts`, the compact parser in `src/adapters/js-test.ts`, frame validation in `src/pruner/stack-pruner.ts`, and the CT-2 fixture in `scripts/acceptance/run-acceptance.mjs`; re-run gate met (`17 PASS / 0 FAIL / 1 SKIP`). |
 | `draft-1` | 2026-10-31 | Initial delta after the first acceptance run (`run-2026-10-31_03-37-56-321`): five normative deltas and the implementation work they imply. |

@@ -4,12 +4,12 @@
 | :--- | :--- |
 | **Spec ID** | `SPEC-002-DOT-TEST-DIGEST` |
 | **Status** | `DRAFT` |
-| **Version** | `0.1.1` |
-| **Date** | 2026-10-30 |
-| **Supersedes** | `0.1.0` (2026-10-30) |
+| **Version** | `0.1.2` |
+| **Date** | 2026-10-31 |
+| **Supersedes** | `0.1.1` (2026-10-30) |
 | **Target Runtime** | Node.js `>= 20.x` / TypeScript `5.x` |
 | **Upstream Dependency** | `zod`, TypeSafe AI Jev API (`jev-1.13.0+`) |
-| **Amended by** | `specs/INTEGRITY-SPEC-002.md` — findings `F1`–`F11`, resolutions `R1`–`R15` |
+| **Amended by** | `specs/INTEGRITY-SPEC-002.md` — findings `F1`–`F11`, resolutions `R1`–`R15`; `specs/DELTA-SPEC-002-0.1.2.md` — deltas `Δ-1`–`Δ-5` |
 
 ## 1. Normative Language & Terminology
 
@@ -159,12 +159,34 @@ Boolean flags also accept an explicit value (`--no-jev=false`); any value other 
 
 Before invoking any external classifier, Gear 0 SHALL strip all ANSI CSI/OSC sequences (`\x1b\[[0-9;]*[a-zA-Z]`), collapse carriage-return progress overwrites **within** a line (keeping the last segment that still has visible text, so a CRLF terminator never erases the line), and drop passing noise. Line identity is preserved 1:1 so that every `raw_log_lines` pointer stays valid. Gear 0 then parses the stream using its deterministic grammar adapters:
 
-1. **JavaScript / TypeScript Test Runners (`vitest`, `jest`, `playwright`, `node --test`)**: Extracts `Expected` vs. `Received` diffs, assertion types, and `at <symbol> (<file>:<line>:<col>)` stack frames. TAP (`not ok N - …` with `# tests`/`# pass`/`# fail`) and Playwright's numbered `N) [browser] › …` headers are part of this grammar.
+1. **JavaScript / TypeScript Test Runners (`vitest`, `jest`, `playwright`, `node --test`)**: Extracts `Expected` vs. `Received` diffs, assertion types, and `at <symbol> (<file>:<line>:<col>)` stack frames. TAP (`not ok N - …` with `# tests`/`# pass`/`# fail`) and Playwright's numbered `N) [browser] › …` headers are part of this grammar. When the child is piped — the normal case, since the wrapper always captures `stdout`/`stderr` — the compact (non-TTY) reporter forms of §4.2.1 also apply.
 2. **TypeScript & Linters (`tsc`, `eslint`, `biome`)**: Parses `file(line,col): error TSXXXX: message` diagnostics and groups identical error codes occurring on the same symbol or type definition into a single `FailureCluster`.
 3. **Python (`pytest`, `ruff`, `mypy`)**: Parses `E   AssertionError` diffs and `file:line: in <func>` traceback entries, stripping `.venv/` and `site-packages/` frames.
 4. **Rust & Go (`cargo test`, `cargo check`, `go test`)**: Parses `thread '...' panicked at file:line:col` and `rustc` diagnostic spans (`--> file:line:col`), stripping `/rustc/` and Go runtime frames.
 
 For every deduplicated `FailureCluster`, the `SignalWindow` Inliner SHALL read the repository file referenced in `top_frame` from disk and attach `--context-lines` lines around the target line number (default ±2, marking the exact line with `>`) so the caller immediately sees the offending source lines without opening the file separately.
+
+#### 4.2.1. Piped (Non-TTY) Runner Output
+
+When the child's `stdout`/`stderr` are pipes — the normal case for this wrapper — the JavaScript / TypeScript adapter MUST additionally recognize the compact reporter forms:
+
+a. A file banner `❯ <file> (<n> tests | <m> failed) <duration>` is **metadata**. It MUST NOT create a `FailureCluster`, MUST NOT be recorded as a stack frame, and MUST NOT terminate the raw-line range of the failures that follow it.
+b. An inline failing row `× <name> <duration>` (or `✕`/`✗`) MUST have the trailing duration removed before `<name>` is used as a test identifier. Durations are presentation, never identity.
+c. A continuation row `→ <message>` MUST be stored as the failure message.
+d. The `Failed Tests <n>` summary and its `FAIL <file> > <name>` rows describe failures that were already listed inline. They MUST be reconciled with the inline rows, not counted again.
+e. A stack printed once for a deduplicated group of summary rows MUST be attributed to every row in that group, so each member carries the same frames for fingerprinting, pruning and `top_frame`.
+f. Separators and counters (`[1/50]`, `Test Files …`, `Tests …`, `Duration …`) MUST never become frames, messages or failures.
+
+A `Failed Suites` block (for example, a broken import) is not an inline-failure grammar; it retains the v0.1.1 grammar so that its `SYNTAX_IMPORT_ERROR` classification and failure block survive.
+
+#### 4.2.2. Failure Reconciliation and Accounting
+
+For a given run, after all sources in the stream have been parsed, the runtime MUST emit **at most one** failure record per canonical test identity (§4.3). Consequently:
+
+* `affected_count` MUST count distinct tests, not parse records, and `Σ affected_count` over all deduplicated clusters MUST equal the number of distinct parsed failures — and therefore equal `summary.failed` when no cluster is dropped by `--max-clusters` or the `INV-2` budget;
+* a grammar-parsed run MUST NOT report more failures than the runner's own summary (`Σ affected_count <= summary.failed` in every case);
+* only actual stack-frame lines MAY enter `pruned_stack`; banners, messages, separators and counters MUST be rejected by frame validation;
+* when no repository frame exists in the captured text, `top_frame` MUST be `unknown:0:0`, `signal_window` MUST be empty, and the runtime MUST report that honestly rather than invent a file or borrow the test file's name.
 
 #### Scenario 2: Cascading Failure Deduplication (`INV-2` & `INV-4` Enforcement)
 * **GIVEN** a broken helper `parseToken()` in `src/auth/jwt.ts:28` causes 47 integration tests across 8 test files to throw `TypeError: token.split is not a function at parseToken (src/auth/jwt.ts:28:19)` with 35 lines of `node_modules/vitest/...` frames per test (1,900+ lines of raw output)
@@ -174,6 +196,8 @@ For every deduplicated `FailureCluster`, the `SignalWindow` Inliner SHALL read t
 ### 4.3. Requirement: TDD Red-Green-Refactor Phase Gate (`REQ-TDD-GATE`)
 
 When `--tdd-phase` is specified, `dot-test-digest` SHALL persist run state at `${DOT_TEST_DIGEST_HOME:-~/.cache/dot-test-digest}/state-<scope_id>.json`, written atomically (unique temp file, then rename) so concurrent scopes never contend, and enforce the following phase transition rules:
+
+Baseline entries and `RedGreenDelta` MUST use a canonical identity of the form `<repo-relative test file>::<test name>`, derived from the summary-section row (which carries the file) or from the preceding file banner plus the inline row. ANSI, timing suffixes, and duplicate representations of the same test MUST be removed before comparison. `newly_passing`, `still_failing` and `newly_broken_regressions` MUST count distinct identities. A single test that appears twice in one run's text contributes one identity and one count.
 
 | `--tdd-phase` | Child Exit Code | Error Kind Detected | Gate Verdict | Exit Code & Action |
 | :--- | :--- | :--- | :--- | :--- |
@@ -227,6 +251,7 @@ To keep the codebase modular and self-contained, the implementation SHALL follow
 | `src/pruner/ansi-stripper.ts` | Streaming stripper for ANSI CSI/OSC sequences, spinner carriage-returns, and passing test noise (`INV-1`). |
 | `src/pruner/stack-pruner.ts` | Strips `node_modules`, `/nix/store`, `.venv`, and stdlib frames (`INV-4`) and reads ±2-line `SignalWindow` snippets from disk. |
 | `src/pruner/cluster-dedup.ts` | Computes `RootCauseFingerprint` hashes and collapses cascading failures into bounded `FailureCluster` records (`INV-2`). |
+| `src/pruner/failure-identity.ts` | Canonical test identity (normalisation, `file::name` keys, deduplication) shared by the adapters, the pruner and the TDD gate (§4.2.2, §4.3). |
 | `src/adapters/index.ts` | Gear 0 deterministic grammar parsers for `vitest`/`jest`, `tsc`/`eslint`, `pytest`/`ruff`, and `cargo`/`go test`. |
 | `src/gears/gear1-jev.ts` | Unstructured log window chunker (`<= 255` options, budgeted request `INV-6`), multi-question assembly, and transient flake retry trigger. |
 | `src/state/tdd-gate.ts` | Manages `${DOT_TEST_DIGEST_HOME:-~/.cache/dot-test-digest}/state-<scope_id>.json`, enforces `INV-5` (`VALID_RED` vs `INVALID_RED`), and computes `RedGreenDelta`. |
@@ -248,10 +273,10 @@ To keep the codebase modular and self-contained, the implementation SHALL follow
 
 The table is the minimum contract: every listed path MUST exist with its stated responsibility. Additive modules are permitted, provided none of the rows above loses its responsibility to them.
 
-## 6. Acceptance Criteria & Definition of Done (`v0.1.1`)
+## 6. Acceptance Criteria & Definition of Done (`v0.1.2`)
 
 * **Compliance Test 1 (`CT-1`: Pass-State Compression)**: Wrapping a passing test suite that emits `2,500 lines` (`~18,000 tokens`) of standard `vitest` + `console.log` output MUST emit `<= 160 bytes` **including the trailing newline** to `stdout` in `compact-md` (`>= 99.8%` token reduction) while preserving the full `2,500 lines` in `~/.cache/dot-test-digest/logs/<run_id>.log`.
-* **Compliance Test 2 (`CT-2`: 50-to-1 Cascade Deduplication & Stack Pruning)**: Feeding a fixture where 50 tests fail across 10 files due to the same thrown exception inside a shared helper with a 35-frame `node_modules` stack trace MUST produce exactly `1` `FailureCluster` (`affected_count: 50`), `0` `node_modules` stack frames, an inlined 5-line `SignalWindow` from the helper file, and a total `stdout` payload of `<= 220 EstimatedToken` (`>= 94%` token reduction). The 220 is a fixture-specific bound; `INV-2`'s universal ceiling remains 600.
+* **Compliance Test 2 (`CT-2`: 50-to-1 Cascade Deduplication & Stack Pruning, end-to-end)**: Generate a fixture in which 50 tests across 10 files fail because a shared **repository** helper performs the failing operation (so the throw site is a repository frame and the printed stack may also contain external frames). Run the built binary as `dot-test-digest -- vitest run` with `stdout` piped (non-TTY). The emitted `compact-md` output MUST contain exactly `1` `FailureCluster` with `affected_count: 50`, **no** internal or third-party frames other than at most one external boundary frame (as permitted by `INV-4`), and an inlined 5-line `SignalWindow` from the helper file. Total `stdout` MUST be `<= 220 EstimatedToken`; the universal ceiling remains `INV-2`'s 600. The JSON envelope MUST report `summary.failed: 50`, `total_clusters: 1`, and `Σ affected_count = 50`. V8 prints at most 10 frames by default, so the fixture MUST place the throwing repository frame inside that window; a stack containing only `node_modules` frames does not require a `SignalWindow`, and §4.2.2's honesty rule applies instead.
 * **Compliance Test 3 (`CT-3`: TDD Invalid-Red Gate Enforcement)**: Running `dot-test-digest --tdd-phase=red` against (a) a passing test file and (b) a test file containing an unresolved `import` or `SyntaxError` MUST in both cases emit `status: "INVALID_RED"` and exit with code `64`; running it against a test file that fails on `expect(actual).toBe(expected)` MUST emit `status: "VALID_RED"` and exit with code `0`.
 * **Compliance Test 4 (`CT-4`: Gear 1 Jev Unstructured Build Pinpointing)**: Feeding a `3,000-line` unstructured linker failure fixture (where the actual linker error occurs 400 lines above the end of the log) with Jev (`jev-1.13.0+`) MUST send `<= 255` candidate windows in **exactly one** RPC call to `/v1/systemone` and return a `FailureCluster` containing the exact linker error window. Service latency (`< 150ms`) is a property of Jev, not of this binary, and is not asserted here.
 * **Compliance Test 5 (`CT-5`: Concurrent Scope Isolation)**: Running two concurrent `dot-test-digest` processes with `--scope-id=s01` and `--scope-id=s02` (with `DOT_TEST_DIGEST_HOME` pointing at a temp directory) MUST write isolated state files (`state-s01.json`, `state-s02.json`), leave no `.tmp` residue, and show zero file lock contention or cross-run `RedGreenDelta` contamination.
@@ -261,5 +286,6 @@ The table is the minimum contract: every listed path MUST exist with its stated 
 
 | Version | Date | Change |
 | :--- | :--- | :--- |
+| `0.1.2` | 2026-10-31 | Applies `specs/DELTA-SPEC-002-0.1.2.md` after the first acceptance run (`17 PASS / 0 FAIL / 1 SKIP`). Adds §4.2.1 (piped non-TTY runner grammar) and §4.2.2 (one failure per canonical identity, frame validation, honest `unknown:0:0`); adds canonical `file::name` identity to §4.3 so duplicate reporter sections cannot inflate `RedGreenDelta`; rewrites `CT-2` as an end-to-end piped CLI test whose repository throw site is inside V8's 10-frame window and aligns its `node_modules` wording with `INV-4`'s single boundary frame. No invariant or ceiling is relaxed. |
 | `0.1.1` | 2026-10-30 | Applies the integrity review (`specs/INTEGRITY-SPEC-002.md`). `VALID_RED` added to the status enum and `VALID_GREEN` corrected to `PASS`; `--retry-flakes`, `--help`, `--version` documented; `pruned_stack` widened to 6 and engine frames excluded; the Jev wire contract corrected to `POST /v1/systemone` with lowercase types, a question map and a `criteria` map; `noul` probability replaces `confidence`; escalation widened to `clusters.length == 0` regardless of adapter match; the green failure row, `BUILD_ERROR` assignment and all `none` rows added; the red gate gains the missing-export rule and the behavioral-evidence rule; truncation policy and the `compact-md`-only scope of `INV-1`/`INV-2` stated; `state` bounded; `CT-6` added; editorial fixes (`±` notation, `Date`/`Depends on` header, layout rows completed). |
 | `0.1.0` | 2026-10-30 | Initial draft. |
