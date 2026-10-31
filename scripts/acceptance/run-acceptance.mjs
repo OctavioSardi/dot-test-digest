@@ -829,7 +829,9 @@ async function runChecks() {
   });
 
   await check("C15", "CT-5: two concurrent scopes write isolated state with no temp residue", async (t, ctx) => {
-    const command = ["--tdd-phase=red", "--scope-id=__SCOPE__", "--", process.execPath, VITEST, "run"];
+    // The scope value is a standalone token so the placeholder can be replaced;
+    // `--scope-id=__SCOPE__` would not match the `part === "__SCOPE__"` test.
+    const command = ["--tdd-phase=red", "--scope-id", "__SCOPE__", "--", process.execPath, VITEST, "run"];
     const [first, second] = await Promise.all([
       ctx.tool(command.map((part) => (part === "__SCOPE__" ? "s01" : part)), {
         cwd: isolateA,
