@@ -340,31 +340,20 @@ function passSpec() {
   return `${lines.join("\n")}\n`;
 }
 
-/** 35 nested functions, all in node_modules, so INV-4 has something to prune. */
-function sinkSource() {
-  const frames = [];
-  for (let index = 0; index < 36; index += 1) {
-    const body =
-      index === 35 ? 'return value.split(".");' : `return frame${index + 1}(value);`;
-    frames.push(`function frame${index}(value) { ${body} }`);
-  }
-  return [
-    '"use strict";',
-    ...frames,
-    "module.exports = { boom: (value) => frame0(value) };",
-    "",
-  ].join("\n");
-}
-
+/**
+ * The throw site must be a repository frame so the runner prints it within
+ * V8's 10-frame stack limit (CT-2, SPEC-002 v0.1.2). The fixture must not
+ * change the child's runtime behaviour (no `--stack-trace-limit`): whatever
+ * the runner prints is what the adapter has to parse.
+ */
 function cascadeHelper() {
   return [
-    'import { createRequire } from "node:module";',
-    "",
-    "const require = createRequire(import.meta.url);",
-    'const sink = require("@acceptance/sink") as { boom: (value: unknown) => string };',
-    "",
+    "/**",
+    " * Parses a dotted token; the cascade fixture calls it with a number.",
+    " */",
     "export function parseToken(token: string): string {",
-    "  return sink.boom(token).toUpperCase();",
+    '  const parts = token.split(".");',
+    '  return parts.join(".").toUpperCase();',
     "}",
     "",
   ].join("\n");
@@ -412,9 +401,6 @@ async function buildFixtures() {
   const cascade = {
     "vitest.config.ts": vitestConfig(),
     "src/helper.ts": cascadeHelper(),
-    "node_modules/@acceptance/sink/package.json":
-      '{\n  "name": "@acceptance/sink",\n  "version": "1.0.0",\n  "main": "index.cjs"\n}\n',
-    "node_modules/@acceptance/sink/index.cjs": sinkSource(),
   };
   for (let file = 1; file <= 10; file += 1) {
     cascade[`file-${String(file).padStart(2, "0")}.spec.ts`] = cascadeSpec(file);
