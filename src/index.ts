@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { runGear0 } from "./adapters/index.js";
 import { EX_USAGE, USAGE, UsageError, parseArgs } from "./cli/args.js";
@@ -202,8 +203,17 @@ export async function main(argv: readonly string[], deps: MainDeps = {}): Promis
   }
 }
 
-const entry = process.argv[1];
-if (entry !== undefined && import.meta.url === pathToFileURL(entry).href) {
+/** True when this module is the process entrypoint, also when the bin is reached through a symlink. Never throws. */
+function isEntrypoint(entry: string | undefined): boolean {
+  if (entry === undefined) return false;
+  try {
+    return import.meta.url === pathToFileURL(realpathSync(entry)).href;
+  } catch {
+    return false;
+  }
+}
+
+if (isEntrypoint(process.argv[1])) {
   void main(process.argv.slice(2)).then((code) => {
     process.exitCode = code;
   });
