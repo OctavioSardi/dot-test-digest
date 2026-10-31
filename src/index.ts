@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { runGear0 } from "./adapters/index.js";
 import { EX_USAGE, USAGE, UsageError, parseArgs } from "./cli/args.js";
@@ -203,7 +204,7 @@ export async function main(argv: readonly string[], deps: MainDeps = {}): Promis
 }
 
 const entry = process.argv[1];
-if (entry !== undefined && import.meta.url === pathToFileURL(entry).href) {
+if (entry !== undefined && import.meta.url === pathToFileURL(realpathSync(entry)).href) {
   void main(process.argv.slice(2)).then((code) => {
     process.exitCode = code;
   });
