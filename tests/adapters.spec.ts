@@ -24,6 +24,34 @@ const VITEST_PASS = ` ✓ tests/auth.spec.ts (12 tests) 640ms
  Test Files  32 passed (32)
       Tests  240 passed (240)`;
 
+const VITEST_COMPACT = ` RUN  v2.1.9 /work/repo
+
+ ❯ file-01.spec.ts (1 test | 1 failed) 5ms
+   × ACCEPTANCE cascade file 01 > case 0 5ms
+     → token.split is not a function
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  file-01.spec.ts > ACCEPTANCE cascade file 01 > case 0
+ FAIL  file-02.spec.ts > ACCEPTANCE cascade file 02 > case 0
+TypeError: token.split is not a function
+ ❯ parseToken src/helper.ts:5:20
+ ❯ file-01.spec.ts:10:11
+ ❯ node_modules/vitest/dist/chunk.js:1:1
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ Test Files  2 failed (2)
+      Tests  2 failed (2)`;
+
+const VITEST_COMPACT_INLINE = ` ❯ tests/auth.spec.ts (1 test | 1 failed) 640ms
+   × login > rejects expired token 10ms
+     → expected 200 to be 401
+ ❯ parseToken src/auth/jwt.ts:28:19
+
+ Test Files  1 failed (32)
+      Tests  1 failed | 239 passed (240)`;
+
 const TSC = `src/auth/jwt.ts(28,19): error TS2339: Property 'split' does not exist on type 'Token'.
 src/auth/session.ts(12,5): error TS2339: Property 'split' does not exist on type 'Token'.
 src/import.ts(3,10): error TS2307: Cannot find module './helprs' or its corresponding type declarations.`;
@@ -104,6 +132,35 @@ describe("js-test adapter", () => {
     const result = runGear0(lines(VITEST_PASS));
     expect(result?.counts).toEqual({ passed: 240, failed: 0, skipped: 0 });
     expect(result?.failures).toEqual([]);
+  });
+
+  it("parses the non-TTY compact reporter into one failure per test", () => {
+    const result = runGear0(lines(VITEST_COMPACT));
+    expect(result?.counts).toEqual({ passed: 0, failed: 2, skipped: 0 });
+    const failures = result?.failures ?? [];
+    expect(failures).toHaveLength(2);
+    expect(failures.map((f) => f.testName)).toEqual([
+      "ACCEPTANCE cascade file 01 > case 0",
+      "ACCEPTANCE cascade file 02 > case 0",
+    ]);
+    expect(failures.map((f) => f.testFile)).toEqual(["file-01.spec.ts", "file-02.spec.ts"]);
+    for (const failure of failures) {
+      expect(failure.message).toBe("TypeError: token.split is not a function");
+      expect(failure.frames).toContain("parseToken src/helper.ts:5:20");
+      expect(failure.errorKind).toBe("RUNTIME_EXCEPTION");
+    }
+    // The banner must never become a test or a frame.
+    expect(failures.some((f) => f.testName?.includes("tests |"))).toBe(false);
+    expect(failures.some((f) => f.frames.some((frame) => frame.includes("tests |")))).toBe(false);
+  });
+
+  it("keeps inline stacks from a TTY reporter and strips the row duration", () => {
+    const [failure] = runGear0(lines(VITEST_COMPACT_INLINE))?.failures ?? [];
+    expect(failure?.testName).toBe("login > rejects expired token");
+    expect(failure?.testFile).toBe("tests/auth.spec.ts");
+    expect(failure?.message).toBe("expected 200 to be 401");
+    expect(failure?.diff).toEqual({ expected: "401", received: "200" });
+    expect(failure?.frames).toEqual(["parseToken src/auth/jwt.ts:28:19"]);
   });
 
   it("classifies an unresolved import as SYNTAX_IMPORT_ERROR", () => {

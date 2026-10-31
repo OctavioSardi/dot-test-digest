@@ -1,9 +1,12 @@
 import { createHash } from "node:crypto";
 import type { ErrorKind, FailureCluster } from "../types/schema.js";
+import { uniqueFailures } from "./failure-identity.js";
 import { pruneStack, readSignalWindow, topRepoFrame } from "./stack-pruner.js";
 
 export interface RawFailure {
   testName: string | null;
+  /** The test file, when the stream revealed it; feeds the canonical identity. */
+  testFile?: string | null;
   errorKind: ErrorKind;
   message: string;
   frames: string[];
@@ -52,7 +55,9 @@ export function dedupeFailures(
 ): FailureCluster[] {
   const groups = new Map<string, RawFailure[]>();
 
-  for (const failure of failures) {
+  // SPEC-002 §4.2.2: one failure record per canonical test identity, even if
+  // the stream mentioned the test in more than one reporter section.
+  for (const failure of uniqueFailures(failures)) {
     const top = topRepoFrame(failure.frames, options.repoRoot);
     const topLocation = top?.location ?? "unknown:0:0";
     const fingerprint = computeFingerprint(failure.errorKind, topLocation, failure.message);

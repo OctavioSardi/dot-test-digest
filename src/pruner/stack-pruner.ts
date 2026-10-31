@@ -71,6 +71,16 @@ export function isExternalFrame(frame: string): boolean {
   return EXTERNAL_PATH_PATTERNS.some((pattern) => pattern.test(parsed.file ?? frame));
 }
 
+/**
+ * SPEC-002 §4.2.2: only real stack-frame lines may reach `pruned_stack`.
+ * Runner banners (`❯ file (5 tests | 5 failed) 9ms`), messages and counters
+ * carry no `file:line` and are not engine frames, so they are rejected here.
+ */
+export function isFrameLike(frame: string): boolean {
+  if (parseFrame(frame).file !== null) return true;
+  return isExternalFrame(frame);
+}
+
 export function toRepoRelative(file: string, repoRoot: string): string {
   const absolute = path.isAbsolute(file) ? file : path.resolve(repoRoot, file);
   const relative = path.relative(repoRoot, absolute).split(path.sep).join("/");
@@ -91,6 +101,7 @@ export function pruneStack(frames: readonly string[], repoRoot: string): string[
 
   for (const frame of frames) {
     if (isEngineFrame(frame)) continue;
+    if (!isFrameLike(frame)) continue;
     if (isExternalFrame(frame)) {
       if (!boundaryKept && repoFrames > 0) {
         kept.push(frame.trim());

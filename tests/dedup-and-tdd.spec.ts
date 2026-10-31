@@ -5,6 +5,7 @@ import {
   normalizeAssertionTemplate,
   type RawFailure,
 } from "../src/pruner/cluster-dedup.js";
+import { canonicalTestId } from "../src/pruner/failure-identity.js";
 
 const REPO = "/work/repo";
 
@@ -120,6 +121,29 @@ describe("dedupeFailures", () => {
       options,
     );
     expect(cluster?.diff).toEqual({ expected: "401", received: "200" });
+  });
+
+  it("counts one test once when inline and summary rows differ only by timing", () => {
+    const failures = [
+      failure({
+        testName: "ACCEPTANCE red case 8ms",
+        testFile: "failing.spec.ts",
+        startLine: 10,
+        endLine: 12,
+      }),
+      failure({
+        testName: "ACCEPTANCE red case",
+        testFile: "failing.spec.ts",
+        startLine: 20,
+        endLine: 22,
+      }),
+    ];
+    const clusters = dedupeFailures(failures, options);
+    expect(clusters).toHaveLength(1);
+    expect(clusters[0]?.affected_count).toBe(1);
+    expect(canonicalTestId("failing.spec.ts", "ACCEPTANCE red case 8ms")).toBe(
+      "failing.spec.ts::ACCEPTANCE red case",
+    );
   });
 
   it("falls back to unknown:0:0 when no repository frame survives", () => {

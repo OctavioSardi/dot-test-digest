@@ -6,6 +6,7 @@ import { buildEnvelope, formatEnvelope } from "./formatters/envelope.js";
 import { MIN_UNSTRUCTURED_LINES, triageUnstructured, type JevAsker } from "./gears/gear1-jev.js";
 import { normalizeLine } from "./pruner/ansi-stripper.js";
 import { dedupeFailures, type RawFailure } from "./pruner/cluster-dedup.js";
+import { canonicalTestId, uniqueFailures } from "./pruner/failure-identity.js";
 import { runChild, type CapturedLine } from "./runner/capture.js";
 import { RawLogWriter } from "./runner/raw-log.js";
 import {
@@ -114,7 +115,7 @@ export async function main(argv: readonly string[], deps: MainDeps = {}): Promis
     return {
       lines,
       gear,
-      failures: gear0?.failures ?? [],
+      failures: uniqueFailures(gear0?.failures ?? []),
       clusters,
       counts: gear0?.counts ?? { passed: 0, failed: 0, skipped: 0 },
       exitCode: capture.exitCode,
@@ -129,9 +130,15 @@ export async function main(argv: readonly string[], deps: MainDeps = {}): Promis
     let run = await attempt();
     if (run.retryWanted && options.retryFlakes) run = await attempt();
 
-    const failedTests = run.failures
-      .map((failure) => failure.testName)
-      .filter((name): name is string => name !== null);
+    // SPEC-002 §4.3: baseline and delta compare canonical identities, not the
+    // presentation strings a reporter happened to print.
+    const failedTests = [
+      ...new Set(
+        run.failures
+          .map((failure) => canonicalTestId(failure.testFile, failure.testName))
+          .filter((id): id is string => id !== null),
+      ),
+    ];
 
     const decision = evaluatePhase({
       phase: options.tddPhase,
