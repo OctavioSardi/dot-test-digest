@@ -7,3 +7,7 @@ coverage/
 
 # acceptance harness output
 .acceptance/
+
+# internal docs and stray npm lockfile (repo uses pnpm)
+docs/superpowers/
+package-lock.json
